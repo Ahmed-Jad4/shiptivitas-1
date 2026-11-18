@@ -62,6 +62,18 @@ describe('Shipping Requests board', () => {
     expect(lanes[1].querySelector('[data-id="1"]').classList.contains('Card-blue')).toBe(true);
   });
 
+  it('marks a completed request green in the Complete lane', () => {
+    const lanes = container.querySelectorAll('.Swimlane-dragColumn');
+    const completedCard = lanes[0].querySelector('[data-id="2"]');
+    mockDragStart();
+    lanes[2].appendChild(completedCard);
+
+    mockDropHandler();
+
+    expect(board.state.clients.complete[0].status).toBe('complete');
+    expect(lanes[2].querySelector('[data-id="2"]').classList.contains('Card-green')).toBe(true);
+  });
+
   it('preserves a reordered card position in React state', () => {
     const backlog = container.querySelector('.Swimlane-dragColumn');
     const movedCard = backlog.querySelector('[data-id="2"]');
@@ -74,3 +86,4 @@ describe('Shipping Requests board', () => {
     expect(backlog.firstChild.dataset.id).toBe('2');
   });
 });
+
