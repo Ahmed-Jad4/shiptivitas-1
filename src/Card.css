@@ -1,8 +1,14 @@
 .Card {
-  background-color: lightgrey;
-  font-size: 12px;
-  padding: 20px;
+  font-size: 13px;
+  padding: 16px;
   margin-bottom: 10px;
+  border-radius: 5px;
+  cursor: grab;
+  box-shadow: 0 1px 3px rgba(25, 40, 60, 0.12);
+}
+
+.Card:active {
+  cursor: grabbing;
 }
 
 .Card-grey {
@@ -22,4 +28,9 @@
 
 .Card-title {
   font-weight: bold;
+}
+
+.Card-description {
+  margin-top: 6px;
+  opacity: 0.85;
 }

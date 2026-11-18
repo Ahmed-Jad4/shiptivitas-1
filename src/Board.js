@@ -9,18 +9,74 @@ export default class Board extends React.Component {
     super(props);
     const clients = this.getClients();
     this.state = {
+      // Start every request in Backlog; lane changes live in React state only.
       clients: {
-        backlog: clients.filter(client => !client.status || client.status === 'backlog'),
-        inProgress: clients.filter(client => client.status && client.status === 'in-progress'),
-        complete: clients.filter(client => client.status && client.status === 'complete'),
+        backlog: clients.map(client => ({ ...client, status: 'backlog' })),
+        inProgress: [],
+        complete: [],
       }
-    }
+    };
     this.swimlanes = {
       backlog: React.createRef(),
       inProgress: React.createRef(),
       complete: React.createRef(),
+    };
+    this.dragula = null;
+    this.dragSnapshot = null;
+  }
+  componentDidMount() {
+    this.dragula = Dragula([
+      this.swimlanes.backlog.current,
+      this.swimlanes.inProgress.current,
+      this.swimlanes.complete.current,
+    ]);
+    this.dragula.on('drag', this.handleDragStart);
+    this.dragula.on('drop', this.handleDrop);
+  }
+
+  componentWillUnmount() {
+    if (this.dragula) {
+      this.dragula.off('drag', this.handleDragStart);
+      this.dragula.off('drop', this.handleDrop);
+      this.dragula.destroy();
     }
   }
+
+  handleDragStart = () => {
+    this.dragSnapshot = Object.keys(this.swimlanes).reduce((snapshot, lane) => {
+      snapshot[lane] = Array.from(this.swimlanes[lane].current.children);
+      return snapshot;
+    }, {});
+  };
+
+  handleDrop = () => {
+    const clientsById = {};
+    Object.keys(this.state.clients).forEach(lane => {
+      this.state.clients[lane].forEach(client => { clientsById[client.id] = client; });
+    });
+
+    const clients = {
+      backlog: Array.from(this.swimlanes.backlog.current.children).map(card => clientsById[card.dataset.id]),
+      inProgress: Array.from(this.swimlanes.inProgress.current.children).map(card => clientsById[card.dataset.id]),
+      complete: Array.from(this.swimlanes.complete.current.children).map(card => clientsById[card.dataset.id]),
+    };
+    clients.backlog = clients.backlog.map(client => ({ ...client, status: 'backlog' }));
+    clients.inProgress = clients.inProgress.map(client => ({ ...client, status: 'in-progress' }));
+    clients.complete = clients.complete.map(client => ({ ...client, status: 'complete' }));
+
+    // Dragula moves DOM nodes directly. Restore React's previous DOM order first,
+    // then let React reconcile the new order from state.
+    if (this.dragSnapshot) {
+      Object.keys(this.dragSnapshot).forEach(lane => {
+        this.dragSnapshot[lane].forEach(card => {
+          this.swimlanes[lane].current.appendChild(card);
+        });
+      });
+      this.dragSnapshot = null;
+    }
+    this.setState({ clients });
+  };
+
   getClients() {
     return [
       ['1','Stark, White and Abbott','Cloned Optimal Architecture', 'in-progress'],
